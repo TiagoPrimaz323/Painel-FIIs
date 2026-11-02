@@ -95,14 +95,14 @@ footer{
    Vazio = roda com dados de exemplo.
 
    Colunas da aba publicada, NESTA ORDEM:
-   ticker | nome | segmento | preco | liq7 | liq30
+   ticker | nome | segmento | bvmf | preco | liq7 | liq30
    (primeira linha é cabeçalho e é ignorada)
    ============================================================ */
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRKbGdora9_keAwFjmwWuck_lou_Z_BnTRwhm3gtVe9lwlxWNHwy4uXegG5feuixUnMz1lEBMFoQxVq/pub?gid=1044189289&single=true&output=csv";
 const SEGUNDOS = 8;
 const MINUTOS_REFRESH = 15;
 // Feriados da B3, formato "AAAA-MM-DD". Vazio = feriado conta como pregão.
-const FERIADOS = [];
+const FERIADOS = ["2026-11-02", "2026-11-20", "2026-12-25"];
 
 const ROSTER = [{"t": "HGLG11", "n": "FII HGLG PAX", "g": "Logística"}, {"t": "BTLG11", "n": "FII BTLG", "g": "Logística"}, {"t": "XPLG11", "n": "FII XP LOG", "g": "Logística"}, {"t": "BRCO11", "n": "FII BRESCO", "g": "Logística"}, {"t": "VILG11", "n": "FII VINCI LG", "g": "Logística"}, {"t": "LVBI11", "n": "FII LVBI VBI", "g": "Logística"}, {"t": "GGRC11", "n": "FII GGR ZAG", "g": "Logística"}, {"t": "HSLG11", "n": "FII HSI LOG", "g": "Logística"}, {"t": "RBRL11", "n": "FII RBRL PAX", "g": "Logística"}, {"t": "CPLG11", "n": "FII CPLG", "g": "Logística"}, {"t": "PVBI11", "n": "FII PVBI VBI", "g": "Escritórios"}, {"t": "HGRE11", "n": "FII HGRE PAX", "g": "Escritórios"}, {"t": "JSRE11", "n": "FII JS REAL", "g": "Escritórios"}, {"t": "RCRB11", "n": "FII RIOB RC", "g": "Escritórios"}, {"t": "BRCR11", "n": "FII BC FUND", "g": "Escritórios"}, {"t": "AIEC11", "n": "FII AUTONOMY", "g": "Escritórios"}, {"t": "RBRP11", "n": "FII RBRP PAX", "g": "Escritórios"}, {"t": "CPOF11", "n": "FII CPOF", "g": "Escritórios"}, {"t": "TVRI11", "n": "FII TIVIO RI", "g": "Escritórios"}, {"t": "BROF11", "n": "FII BROF", "g": "Escritórios"}, {"t": "GTWR11", "n": "FII G TOWERS", "g": "Escritórios"}, {"t": "HGRU11", "n": "FII HGRU PAX", "g": "Renda urbana"}, {"t": "TRXF11", "n": "FII TRX REAL", "g": "Renda urbana"}, {"t": "RBVA11", "n": "FII RIOB VA", "g": "Renda urbana"}, {"t": "CPUR11", "n": "FII CPHBC UR", "g": "Renda urbana"}, {"t": "GARE11", "n": "FII GUARDIAN", "g": "Renda urbana"}, {"t": "TRXB11", "n": "FII TRX R II", "g": "Renda urbana"}, {"t": "XPML11", "n": "FII XP MALLS", "g": "Shoppings"}, {"t": "VISC11", "n": "FII VINCI SC", "g": "Shoppings"}, {"t": "HSML11", "n": "FII HSI MALL", "g": "Shoppings"}, {"t": "HGBS11", "n": "FII HEDGEBS", "g": "Shoppings"}, {"t": "PMLL11", "n": "FII PMLL PAX", "g": "Shoppings"}, {"t": "CPSH11", "n": "FII CPSH", "g": "Shoppings"}, {"t": "KNRI11", "n": "FII KINEA", "g": "Híbrido"}, {"t": "ALZR11", "n": "FII ALIANZA", "g": "Híbrido"}, {"t": "RZAT11", "n": "FII ARCTIUM", "g": "Híbrido"}];
 
@@ -157,7 +157,7 @@ function parseCSV(txt){
       return isNaN(v) ? NaN : v;
     };
     return { ticker:(c[0]||"").trim(), nome:(c[1]||"").trim(), segmento:(c[2]||"").trim(),
-             preco:num(c[3]), liq7:num(c[4]), liq30:num(c[5]) };
+             preco:num(c[4]), liq7:num(c[5]), liq30:num(c[6]) };
   }).filter(d => d.ticker);
 }
 

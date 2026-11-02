@@ -38,7 +38,7 @@ main{
 }
 .card{
   background:var(--placa); border:1px solid var(--linha); border-left:4px solid var(--latao);
-  padding:2.4vh 1.6vw; display:flex; flex-direction:column; justify-content:space-between;
+  padding:1.9vh 1.6vw; display:flex; flex-direction:column; justify-content:space-between;
   min-height:0; opacity:1; transition:opacity .45s ease;
 }
 .card.trocando{opacity:0}
@@ -46,14 +46,17 @@ main{
 .card.vazio *{display:none}
 
 .linha-topo{display:flex;align-items:flex-start;justify-content:space-between;gap:1vw}
-.ticker{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10vh;line-height:.9;letter-spacing:.01em}
-.nome{color:var(--tinta-fraca);font-size:2.8vh;font-weight:500;margin-top:.8vh}
+.ticker{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:8.2vh;line-height:.9;letter-spacing:.01em}
+.nome{color:var(--tinta-fraca);font-size:2.4vh;font-weight:500;margin-top:.5vh}
 .grupo{color:var(--latao);font-size:2.6vh;font-weight:600;white-space:nowrap;padding-top:1.4vh}
-.preco{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:11vh;line-height:1;margin:1vh 0}
+.preco{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:9vh;line-height:1;margin:.6vh 0}
 
-.indicadores{display:grid;grid-template-columns:1fr 1fr;gap:1.2vw;border-top:1px solid var(--linha);padding-top:1.6vh}
-.ind span{display:block;color:var(--tinta-fraca);font-size:2.3vh;font-weight:500;margin-bottom:.5vh;white-space:nowrap}
-.ind strong{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:5.4vh;line-height:1;white-space:nowrap}
+.indicadores{display:grid;grid-template-columns:1fr 1fr;gap:1.1vh 1.2vw;border-top:1px solid var(--linha);padding-top:1.2vh}
+.ind span{display:block;color:var(--tinta-fraca);font-size:2vh;font-weight:500;margin-bottom:.3vh;white-space:nowrap}
+.ind strong{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:4.4vh;line-height:1;white-space:nowrap}
+.pvp-baixo strong{color:var(--alta)}
+.pvp-alto strong{color:var(--baixa)}
+.dy strong{color:var(--latao)}
 
 footer{
   flex:0 0 auto; border-top:1px solid var(--linha); background:var(--placa-alta);
@@ -95,7 +98,7 @@ footer{
    Vazio = roda com dados de exemplo.
 
    Colunas da aba publicada, NESTA ORDEM:
-   ticker | nome | segmento | bvmf | preco | liq7 | liq30
+   ticker | nome | segmento | bvmf | preco | liq7 | liq30 | vp_cota | pvp | dy_12m
    (primeira linha é cabeçalho e é ignorada)
    ============================================================ */
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRKbGdora9_keAwFjmwWuck_lou_Z_BnTRwhm3gtVe9lwlxWNHwy4uXegG5feuixUnMz1lEBMFoQxVq/pub?gid=1044189289&single=true&output=csv";
@@ -138,7 +141,9 @@ function exemplo(){
     ticker:f.t, nome:f.n, segmento:f.g,
     preco: 10 + r()*180,
     liq7: 7e5 + r()*3.5e7,
-    liq30: 7e5 + r()*3.5e7
+    liq30: 7e5 + r()*3.5e7,
+    pvp: 0.5 + r()*0.6,
+    dy12: 7 + r()*7
   }));
 }
 
@@ -157,7 +162,8 @@ function parseCSV(txt){
       return isNaN(v) ? NaN : v;
     };
     return { ticker:(c[0]||"").trim(), nome:(c[1]||"").trim(), segmento:(c[2]||"").trim(),
-             preco:num(c[4]), liq7:num(c[5]), liq30:num(c[6]) };
+             preco:num(c[4]), liq7:num(c[5]), liq30:num(c[6]),
+             pvp:num(c[8]), dy12:num(c[9]) };
   }).filter(d => d.ticker);
 }
 
@@ -212,6 +218,8 @@ function montarGrade(){
         <div class="preco"></div>
       </div>
       <div class="indicadores">
+        <div class="ind pvp"><span>P/VP</span><strong class="pvpv"></strong></div>
+        <div class="ind dy"><span>DY 12 meses</span><strong class="dy12"></strong></div>
         <div class="ind"><span>Liq. méd. diária 7d</span><strong class="l7"></strong></div>
         <div class="ind"><span>Liq. méd. diária 30d</span><strong class="l30"></strong></div>
       </div>`;
@@ -235,6 +243,10 @@ function pintar(){
     c.querySelector('.preco').textContent  = "R$ " + brl(f.preco);
     c.querySelector('.l7').textContent     = compacto(f.liq7);
     c.querySelector('.l30').textContent    = compacto(f.liq30);
+    c.querySelector('.pvpv').textContent   = isNaN(f.pvp) ? "—"
+      : f.pvp.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    c.querySelector('.pvp').className = 'ind pvp' + (isNaN(f.pvp) ? '' : f.pvp < 1 ? ' pvp-baixo' : ' pvp-alto');
+    c.querySelector('.dy12').textContent   = isNaN(f.dy12) ? "—" : brl(f.dy12) + "%";
   }
 }
 

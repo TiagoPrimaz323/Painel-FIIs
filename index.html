@@ -98,7 +98,8 @@ footer{
    Vazio = roda com dados de exemplo.
 
    Colunas da aba publicada, NESTA ORDEM:
-   ticker | nome | segmento | bvmf | preco | liq7 | liq30 | vp_cota | pvp | dy_12m
+   ticker | nome | segmento | bvmf | preco | liq7 | liq30 | vp_cota | pvp | dy_12m | liq7_fixo | liq30_fixo
+   (a liquidez exibida vem de liq7_fixo e liq30_fixo, colunas K e L)
    (primeira linha é cabeçalho e é ignorada)
    ============================================================ */
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRKbGdora9_keAwFjmwWuck_lou_Z_BnTRwhm3gtVe9lwlxWNHwy4uXegG5feuixUnMz1lEBMFoQxVq/pub?gid=1044189289&single=true&output=csv";
@@ -162,7 +163,7 @@ function parseCSV(txt){
       return isNaN(v) ? NaN : v;
     };
     return { ticker:(c[0]||"").trim(), nome:(c[1]||"").trim(), segmento:(c[2]||"").trim(),
-             preco:num(c[4]), liq7:num(c[5]), liq30:num(c[6]),
+             preco:num(c[4]), liq7:num(c[10]), liq30:num(c[11]),
              pvp:num(c[8]), dy12:num(c[9]) };
   }).filter(d => d.ticker);
 }

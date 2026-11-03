@@ -49,7 +49,15 @@ main{
 .ticker{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:8.2vh;line-height:.9;letter-spacing:.01em}
 .nome{color:var(--tinta-fraca);font-size:2.4vh;font-weight:500;margin-top:.5vh}
 .grupo{color:var(--latao);font-size:2.6vh;font-weight:600;white-space:nowrap;padding-top:1.4vh}
-.preco{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:9vh;line-height:1;margin:.6vh 0}
+.preco-bloco{display:flex;align-items:center;gap:1.4vw;margin:.6vh 0}
+.preco{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:9vh;line-height:1}
+.var{display:flex;align-items:baseline;gap:.8vw;white-space:nowrap}
+.var-pct{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:3.8vh;padding:.3vh .7vw;border-radius:.7vh;line-height:1.1}
+.var-pct.sobe{color:var(--alta);background:rgba(70,160,122,.16)}
+.var-pct.desce{color:var(--baixa);background:rgba(210,96,78,.16)}
+.var-pct.estavel{color:var(--tinta-fraca)}
+.var-rs{font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:2.9vh}
+.sobe{color:var(--alta)} .desce{color:var(--baixa)} .estavel{color:var(--tinta-fraca)}
 
 .indicadores{display:grid;grid-template-columns:1fr 1fr;gap:1.1vh 1.2vw;border-top:1px solid var(--linha);padding-top:1.2vh}
 .ind span{display:block;color:var(--tinta-fraca);font-size:2vh;font-weight:500;margin-bottom:.3vh;white-space:nowrap}
@@ -98,7 +106,7 @@ footer{
    Vazio = roda com dados de exemplo.
 
    Colunas da aba publicada, NESTA ORDEM:
-   ticker | nome | segmento | bvmf | preco | liq7 | liq30 | vp_cota | pvp | dy_12m | liq7_fixo | liq30_fixo
+   ticker | nome | segmento | bvmf | preco | liq7 | liq30 | vp_cota | pvp | dy_12m | liq7_fixo | liq30_fixo | liq_atualizada | fech_ant
    (a liquidez exibida vem de liq7_fixo e liq30_fixo, colunas K e L)
    (primeira linha é cabeçalho e é ignorada)
    ============================================================ */
@@ -125,6 +133,25 @@ function mercadoAberto(){
   return min >= 600 && min <= 1025;
 }
 
+/* Variação do dia: só em dia de pregão a partir das 10h (antes disso o preço
+   ainda é o fechamento anterior) e só se for plausível para um FII. */
+function pregaoDeHojeIniciado(){
+  const f = new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',
+    weekday:'short',year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+  const g = t => f.find(x => x.type === t).value;
+  const dia = g('weekday').slice(0,3).toLowerCase();
+  if (dia.startsWith('s\u00e1') || dia.startsWith('dom')) return false;
+  if (FERIADOS.includes(g('year')+'-'+g('month')+'-'+g('day'))) return false;
+  return parseInt(g('hour'),10)*60 + parseInt(g('minute'),10) >= 600;
+}
+function variacao(f){
+  if (!pregaoDeHojeIniciado() || isNaN(f.preco) || isNaN(f.ant) || f.ant <= 0) return null;
+  const rs = f.preco - f.ant, pct = rs / f.ant * 100;
+  if (Math.abs(pct) > 30) return null;
+  return { rs, pct };
+}
+
 let dados = [], pagina = 0, aberto = true;
 
 const brl = v => v == null || isNaN(v) ? "—"
@@ -145,7 +172,7 @@ function exemplo(){
     liq30: 7e5 + r()*3.5e7,
     pvp: 0.5 + r()*0.6,
     dy12: 7 + r()*7
-  }));
+  })).map(d => (d.ant = d.preco / (1 + (r()-0.48)*0.025), d));
 }
 
 function parseCSV(txt){
@@ -164,7 +191,7 @@ function parseCSV(txt){
     };
     return { ticker:(c[0]||"").trim(), nome:(c[1]||"").trim(), segmento:(c[2]||"").trim(),
              preco:num(c[4]), liq7:num(c[10]), liq30:num(c[11]),
-             pvp:num(c[8]), dy12:num(c[9]) };
+             pvp:num(c[8]), dy12:num(c[9]), ant:num(c[13]) };
   }).filter(d => d.ticker);
 }
 
@@ -216,7 +243,10 @@ function montarGrade(){
           <div><div class="ticker"></div><div class="nome"></div></div>
           <div class="grupo"></div>
         </div>
-        <div class="preco"></div>
+        <div class="preco-bloco">
+          <div class="preco"></div>
+          <div class="var"><span class="var-pct"></span><span class="var-rs"></span></div>
+        </div>
       </div>
       <div class="indicadores">
         <div class="ind pvp"><span>P/VP</span><strong class="pvpv"></strong></div>
@@ -242,6 +272,16 @@ function pintar(){
     c.querySelector('.nome').textContent   = f.nome || "";
     c.querySelector('.grupo').textContent  = f.segmento || "";
     c.querySelector('.preco').textContent  = "R$ " + brl(f.preco);
+    const v = variacao(f), vp = c.querySelector('.var-pct'), vr = c.querySelector('.var-rs');
+    if (!v){ vp.textContent = "—"; vp.className = 'var-pct estavel'; vr.textContent = ""; }
+    else {
+      const cls = v.pct > 0.004 ? 'sobe' : v.pct < -0.004 ? 'desce' : 'estavel';
+      const seta = cls === 'sobe' ? '↑ ' : cls === 'desce' ? '↓ ' : '';
+      vp.textContent = seta + brl(Math.abs(v.pct)) + "%";
+      vp.className = 'var-pct ' + cls;
+      vr.textContent = (v.rs > 0 ? "+" : v.rs < 0 ? "−" : "") + brl(Math.abs(v.rs)) + " hoje";
+      vr.className = 'var-rs ' + cls;
+    }
     c.querySelector('.l7').textContent     = compacto(f.liq7);
     c.querySelector('.l30').textContent    = compacto(f.liq30);
     c.querySelector('.pvpv').textContent   = isNaN(f.pvp) ? "—"
@@ -259,7 +299,12 @@ function girar(){
 
 function desenharEsteira(){
   const bloco = dados.map(f =>
-    `<span class="item"><b>${f.ticker}</b> <span class="val">R$ ${brl(f.preco)}</span></span>`
+    `<span class="item"><b>${f.ticker}</b> <span class="val">R$ ${brl(f.preco)}</span> ${(() => {
+       const v = variacao(f);
+       if (!v) return '<span class="estavel">—</span>';
+       const cls = v.pct > 0.004 ? 'sobe' : v.pct < -0.004 ? 'desce' : 'estavel';
+       return `<span class="${cls}">${cls==='sobe'?'↑ ':cls==='desce'?'↓ ':''}${brl(Math.abs(v.pct))}%</span>`;
+     })()}</span>`
   ).join("");
   $('trilho').innerHTML = bloco + bloco;
 }

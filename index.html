@@ -106,7 +106,8 @@ footer{
    Vazio = roda com dados de exemplo.
 
    Colunas da aba publicada, NESTA ORDEM:
-   ticker | nome | segmento | bvmf | preco | liq7 | liq30 | vp_cota | pvp | dy_12m | liq7_fixo | liq30_fixo | liq_atualizada | fech_ant
+   ticker | nome | segmento | bvmf | preco | liq7 | liq30 | vp_cota | pvp | dy_12m | liq7_fixo | liq30_fixo | liq_atualizada | fech_ant | fech_ant_fixo | fech_ultimo | data_fech_ultimo
+   (variação: preço contra o último fechamento guardado pelo script das 21h, colunas O, P e Q)
    (a liquidez exibida vem de liq7_fixo e liq30_fixo, colunas K e L)
    (primeira linha é cabeçalho e é ignorada)
    ============================================================ */
@@ -144,6 +145,12 @@ function pregaoDeHojeIniciado(){
   if (dia.startsWith('s\u00e1') || dia.startsWith('dom')) return false;
   if (FERIADOS.includes(g('year')+'-'+g('month')+'-'+g('day'))) return false;
   return parseInt(g('hour'),10)*60 + parseInt(g('minute'),10) >= 600;
+}
+function hojeISO(){
+  const f = new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',
+    year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const g = t => f.find(x => x.type === t).value;
+  return g('year')+'-'+g('month')+'-'+g('day');
 }
 function variacao(f){
   if (!pregaoDeHojeIniciado() || isNaN(f.preco) || isNaN(f.ant) || f.ant <= 0) return null;
@@ -191,7 +198,8 @@ function parseCSV(txt){
     };
     return { ticker:(c[0]||"").trim(), nome:(c[1]||"").trim(), segmento:(c[2]||"").trim(),
              preco:num(c[4]), liq7:num(c[10]), liq30:num(c[11]),
-             pvp:num(c[8]), dy12:num(c[9]), ant:num(c[13]) };
+             pvp:num(c[8]), dy12:num(c[9]),
+             ant: (String(c[16]||'').trim() === hojeISO()) ? num(c[14]) : num(c[15]) };
   }).filter(d => d.ticker);
 }
 
